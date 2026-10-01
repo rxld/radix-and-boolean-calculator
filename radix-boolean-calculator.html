@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radix + Boolean Calculator</title>
+<meta name="description" content="Free online base converter, base calculator and Boolean algebra simplifier with truth tables and Karnaugh maps.">
+<style>
+:root{
+  --bg:#150a26; --card:#241042; --card2:#2e1654; --field:#190b2e;
+  --accent:#a855f7; --accent2:#c084fc; --text:#f3e8ff; --muted:#b19ad6;
+  --border:#4a2b7a; --ok:#86efac; --bad:#fda4af;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(1200px 600px at 50% -10%,#3b1670 0%,var(--bg) 60%) fixed;color:var(--text);line-height:1.5;min-height:100vh;padding:1.5rem 1rem}
+.container{max-width:920px;margin:0 auto}
+h1{text-align:center;font-size:clamp(1.6rem,5vw,2.2rem);margin-bottom:.25rem;background:linear-gradient(90deg,#c084fc,#f0abfc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{text-align:center;color:var(--muted);margin-bottom:1.8rem}
+.tabs{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap}
+.tab{flex:1;min-width:130px;padding:.75rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font:inherit;font-weight:600;transition:.2s}
+.tab:hover{border-color:var(--accent2)}
+.tab.active{background:linear-gradient(135deg,#9333ea,#a855f7);border-color:var(--accent2);box-shadow:0 4px 18px rgba(168,85,247,.35)}
+.panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.4rem}
+.panel.active{display:block}
+label{display:block;margin-bottom:.35rem;font-size:.9rem;color:var(--muted)}
+input{width:100%;padding:.7rem .9rem;background:var(--field);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:1rem;margin-bottom:1rem}
+input:focus,button:focus-visible{outline:2px solid var(--accent2);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
+.btns{display:flex;gap:.6rem}
+button.primary,button.ghost{padding:.8rem 1.3rem;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;transition:.2s}
+button.primary{flex:1;background:linear-gradient(135deg,#9333ea,#a855f7);color:#fff;border:0}
+button.primary:hover{filter:brightness(1.1)}
+button.ghost{background:transparent;color:var(--accent2);border:1px solid var(--border)}
+button.ghost:hover{border-color:var(--accent2)}
+.hint{font-size:.85rem;color:var(--muted);margin:-.6rem 0 1.1rem}
+.hint code,.chips code{background:var(--field);padding:.05rem .35rem;border-radius:5px;color:var(--accent2)}
+.chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.chips button{background:var(--field);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:.25rem .7rem;font:inherit;font-size:.85rem;cursor:pointer}
+.chips button:hover{border-color:var(--accent2)}
+.result-box{margin-top:1.2rem;background:var(--field);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.result-header{background:var(--card2);padding:.55rem 1.1rem;font-size:.9rem;font-weight:600;color:var(--accent2);border-bottom:1px solid var(--border)}
+.result-body{padding:1rem 1.2rem;font-family:ui-monospace,Menlo,Consolas,monospace;min-height:56px;overflow-wrap:anywhere}
+.label{color:var(--muted);font-size:.85rem;display:block;margin-bottom:.15rem}
+.value{color:var(--ok);font-size:1.3rem;font-weight:700}
+.sub{margin-top:.5rem;color:var(--muted);font-size:.9rem}
+.err{color:var(--bad)}
+.placeholder{color:var(--muted);font-style:italic}
+.steps{margin-top:1.2rem;background:var(--field);border:1px solid var(--border);border-radius:12px;padding:.4rem 1rem}
+.step{padding:.65rem 0;border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+.step:last-child{border:0}
+.step-title{color:var(--accent2);font-weight:600;margin-bottom:.15rem}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-family:ui-monospace,Menlo,Consolas,monospace}
+th,td{border:1px solid var(--border);padding:.45rem .7rem;text-align:center}
+th{background:var(--card2);color:var(--accent2)}
+.t{color:var(--ok);font-weight:700}.f{color:var(--bad);font-weight:700}
+.kmap{margin:0 auto;width:auto}
+.kmap td,.kmap th{width:56px;height:46px}
+.kmap td.one{background:#4c1d95;color:#e9d5ff;font-weight:700}
+.section{margin-top:1.2rem}
+.section .result-header{border-radius:12px 12px 0 0;border:1px solid var(--border)}
+.section .body{background:var(--field);border:1px solid var(--border);border-top:0;border-radius:0 0 12px 12px;padding:1rem}
+footer{text-align:center;margin-top:2rem;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Radix + Boolean Calculator</h1>
+  <p class="subtitle">Number systems and Boolean algebra, right in your browser</p>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="converter" role="tab">Base Converter</button>
+    <button class="tab" data-tab="calculator" role="tab">Base Calculator</button>
+    <button class="tab" data-tab="boolean" role="tab">Boolean Algebra</button>
+  </div>
+
+  <!-- CONVERTER -->
+  <div id="converter" class="panel active">
+    <div class="row">
+      <div><label for="conv-num">Number</label><input id="conv-num" placeholder="e.g. 1A3F or -101101" autocomplete="off"></div>
+      <div><label for="conv-from">From base</label><input type="number" id="conv-from" min="2" max="36" value="16"></div>
+    </div>
+    <div class="row">
+      <div><label for="conv-to">To base</label><input type="number" id="conv-to" min="2" max="36" value="10"></div>
+      <div class="btns" style="align-items:flex-start;padding-top:1.45rem">
+        <button class="primary" id="conv-go">Convert</button>
+        <button class="ghost" id="conv-swap" title="Swap bases">⇄</button>
+      </div>
+    </div>
+    <div class="hint">Bases 2–36. Use A–Z for digits above 9.</div>
+    <div class="result-box"><div class="result-header">Result</div>
+      <div class="result-body" id="conv-result"><span class="placeholder">Enter a number and press Convert.</span></div></div>
+  </div>
+
+  <!-- CALCULATOR -->
+  <div id="calculator" class="panel">
+    <label for="calc-base">Working base (2–36)</label>
+    <input type="number" id="calc-base" min="2" max="36" value="16">
+    <label for="calc-expr">Expression</label>
+    <input id="calc-expr" placeholder="e.g. A + F * 2  or  1010 &amp; 1100" autocomplete="off">
+    <div class="hint">Operators: <code>+ - * / // % **</code> <code>&amp; | ^ ~</code> <code>&lt;&lt; &gt;&gt;</code> and parentheses. All numbers use the working base; division is integer division.</div>
+    <button class="primary" id="calc-go" style="width:100%">Calculate</button>
+    <div class="result-box"><div class="result-header">Result</div>
+      <div class="result-body" id="calc-result"><span class="placeholder">Enter an expression and press Calculate.</span></div></div>
+  </div>
+
+  <!-- BOOLEAN -->
+  <div id="boolean" class="panel">
+    <label for="bool-expr">Boolean expression</label>
+    <input id="bool-expr" placeholder="e.g. (A'+B)(A+B')  or  !(A+B)  or  A XOR B" autocomplete="off">
+    <div class="chips" id="bool-examples">
+      <button>(A'+B)(A+B')</button><button>A'B + AB' + AB</button><button>(A+B)'</button><button>AB + A'C + BC</button><button>A XOR B XOR C</button>
+    </div>
+    <div class="hint">NOT: <code>A'</code> <code>!A</code> <code>~A</code> <code>NOT A</code> · AND: <code>*</code> <code>&amp;</code> <code>AND</code> or write letters together · OR: <code>+</code> <code>|</code> <code>OR</code> · XOR: <code>^</code> <code>XOR</code> · constants <code>0</code> <code>1</code> · up to 6 variables.</div>
+    <button class="primary" id="bool-go" style="width:100%">Simplify &amp; analyze</button>
+
+    <div class="result-box"><div class="result-header">Simplified expression</div>
+      <div class="result-body" id="bool-simplified"><span class="placeholder">Enter an expression and press Simplify.</span></div></div>
+    <div id="bool-steps"></div>
+    <div id="bool-table-wrap" class="section" hidden><div class="result-header">Truth table</div><div class="body scroll" id="bool-table"></div></div>
+    <div id="bool-kmap-wrap" class="section" hidden><div class="result-header">Karnaugh map</div><div class="body scroll" id="bool-kmap"></div></div>
+  </div>
+
+  <footer>Free educational tool · Runs entirely in your browser · No data collected</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const showError = (el, msg) => el.innerHTML = `<span class="err">Error: ${esc(msg)}</span>`;
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
+}));
+// Enter key runs the active panel's main button
+document.querySelectorAll('.panel input').forEach(inp => inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter') inp.closest('.panel').querySelector('button.primary').click();
+}));
+
+/* ---------- Base helpers ---------- */
+const DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+function checkBase(b) {
+  if (!Number.isInteger(b) || b < 2 || b > 36) throw new Error("Base must be a whole number from 2 to 36");
+  return b;
+}
+function toBig(str, base) {
+  str = str.trim().toUpperCase();
+  let neg = false;
+  if (str[0] === '-') { neg = true; str = str.slice(1); } else if (str[0] === '+') str = str.slice(1);
+  if (!str) throw new Error("Empty number");
+  let v = 0n; const B = BigInt(base);
+  for (const ch of str) {
+    const d = DIGITS.indexOf(ch);
+    if (d < 0 || d >= base) throw new Error(`Digit '${ch}' is not valid in base ${base}`);
+    v = v * B + BigInt(d);
+  }
+  return neg ? -v : v;
+}
+function fromBig(v, base) {
+  if (v === 0n) return "0";
+  const neg = v < 0n; if (neg) v = -v;
+  let s = ""; const B = BigInt(base);
+  while (v > 0n) { s = DIGITS[Number(v % B)] + s; v /= B; }
+  return neg ? "-" + s : s;
+}
+function allBases(v) {
+  return `<div class="sub">Decimal: ${v} · Binary: ${fromBig(v,2)} · Octal: ${fromBig(v,8)} · Hex: ${fromBig(v,16)}</div>`;
+}
+
+/* ---------- Converter ---------- */
+function convertBase() {
+  const out = $("conv-result");
+  try {
+    const from = checkBase(parseInt($("conv-from").value, 10));
+    const to = checkBase(parseInt($("conv-to").value, 10));
+    const v = toBig($("conv-num").value, from);
+    out.innerHTML = `<span class="label">Value in base ${to}</span><span class="value">${esc(fromBig(v, to))}</span>${allBases(v)}`;
+  } catch (e) { showError(out, e.message); }
+}
+$("conv-go").onclick = convertBase;
+$("conv-swap").onclick = () => {
+  const f = $("conv-from"), t = $("conv-to");
+  [f.value, t.value] = [t.value, f.value];
+  if ($("conv-num").value.trim()) convertBase();
+};
+
+/* ---------- Base calculator (safe parser, BigInt, no eval) ---------- */
+function evalExpr(src, base) {
+  const re = /\s*(\*\*|\/\/|<<|>>|[0-9A-Za-z]+|[-+*\/%&|^~()])/y;
+  const toks = []; let pos = 0, m;
+  src = src.trim();
+  while (pos < src.length) {
+    re.lastIndex = pos; m = re.exec(src);
+    if (!m) throw new Error(`Unexpected character '${src[pos]}'`);
+    toks.push(m[1]); pos = re.lastIndex;
+    while (/\s/.test(src[pos] || "x")) pos++;
+  }
+  let i = 0;
+  const peek = () => toks[i], next = () => toks[i++];
+  const binary = (ops, sub) => () => {
+    let l = sub();
+    while (ops[peek()]) { const f = ops[next()]; l = f(l, sub()); }
+    return l;
+  };
+  const div = (a, b) => { if (b === 0n) throw new Error("Division by zero"); return a / b; };
+  const floorDiv = (a, b) => { const q = div(a, b); return (a % b !== 0n && (a < 0n) !== (b < 0n)) ? q - 1n : q; };
+  const mod = (a, b) => { if (b === 0n) throw new Error("Division by zero"); return ((a % b) + b) % b; };
+  const shift = (a, b, left) => { if (b < 0n) throw new Error("Negative shift"); return left ? a << b : a >> b; };
+  function atom() {
+    const t = next();
+    if (t === undefined) throw new Error("Expression ended unexpectedly");
+    if (t === "(") { const v = orE(); if (next() !== ")") throw new Error("Missing closing parenthesis"); return v; }
+    if (/^[0-9A-Za-z]+$/.test(t)) return toBig(t, base);
+    throw new Error(`Unexpected '${t}'`);
+  }
+  function power() {
+    const b = atom();
+    if (peek() === "**") {
+      next(); const e = unary();
+      if (e < 0n) throw new Error("Negative exponent");
+      return b ** e;
+    }
+    return b;
+  }
+  function unary() {
+    const t = peek();
+    if (t === "-") { next(); return -unary(); }
+    if (t === "+") { next(); return unary(); }
+    if (t === "~") { next(); return ~unary(); }
+    return power();
+  }
+  const mul = binary({ "*": (a,b)=>a*b, "/": div, "//": floorDiv, "%": mod }, unary);
+  const add = binary({ "+": (a,b)=>a+b, "-": (a,b)=>a-b }, mul);
+  const shf = binary({ "<<": (a,b)=>shift(a,b,true), ">>": (a,b)=>shift(a,b,false) }, add);
+  const andE = binary({ "&": (a,b)=>a&b }, shf);
+  const xorE = binary({ "^": (a,b)=>a^b }, andE);
+  const orE = binary({ "|": (a,b)=>a|b }, xorE);
+  if (!toks.length) throw new Error("Please enter an expression");
+  const v = orE();
+  if (i < toks.length) throw new Error(`Unexpected '${toks[i]}'`);
+  return v;
+}
+function calculateBase() {
+  const out = $("calc-result");
+  try {
+    const base = checkBase(parseInt($("calc-base").value, 10));
+    const v = evalExpr($("calc-expr").value, base);
+    out.innerHTML = `<span class="label">Result in base ${base}</span><span class="value">${esc(fromBig(v, base))}</span>${allBases(v)}`;
+  } catch (e) { showError(out, e.message); }
+}
+$("calc-go").onclick = calculateBase;
+
+/* ---------- Boolean parser ---------- */
+function tokenizeBool(src) {
+  const toks = []; let i = 0; src = src.toUpperCase();
+  const words = { AND: "&", OR: "|", XOR: "^", NOT: "!", NAND: "NAND", NOR: "NOR" };
+  while (i < src.length) {
+    const c = src[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (/[A-Z]/.test(c)) {
+      const w = (src.slice(i).match(/^[A-Z]+/) || [""])[0];
+      if (words[w]) { toks.push(words[w]); i += w.length; continue; }
+      toks.push({ v: c }); i++; continue;     // single-letter variable
+    }
+    if (c === "0" || c === "1") { toks.push({ k: c === "1" }); i++; continue; }
+    if ("*·⋅&∧".includes(c)) toks.push("&");
+    else if ("+|∨".includes(c)) toks.push("|");
+    else if ("^⊕".includes(c)) toks.push("^");
+    else if ("!~¬".includes(c)) toks.push("!");
+    else if (c === "'" || c === "’") toks.push("'");
+    else if (c === "(" || c === ")") toks.push(c);
+    else throw new Error(`Unexpected character '${src[i]}'`);
+    i++;
+  }
+  return toks;
+}
+// Precedence (high → low): NOT, AND (incl. implicit), XOR, OR
+function parseBool(src) {
+  const toks = tokenizeBool(src); let i = 0;
+  if (!toks.length) throw new Error("Please enter an expression");
+  const isOperand = t => t !== undefined && (typeof t === "object" || t === "(" || t === "!");
+  function orE() { let l = xorE(); while (toks[i] === "|") { i++; l = { op: "|", a: l, b: xorE() }; } return l; }
+  function xorE() { let l = andE(); while (toks[i] === "^") { i++; l = { op: "^", a: l, b: andE() }; } return l; }
+  function andE() {
+    let l = unary();
+    while (toks[i] === "&" || isOperand(toks[i])) {
+      if (toks[i] === "&") i++;
+      l = { op: "&", a: l, b: unary() };
+    }
+    return l;
+  }
+  function unary() {
+    if (toks[i] === "!") { i++; return { op: "!", a: unary() }; }
+    let n = atom();
+    while (toks[i] === "'") { i++; n = { op: "!", a: n }; }
+    return n;
+  }
+  function atom() {
+    const t = toks[i++];
+    if (t === undefined) throw new Error("Expression ended unexpectedly");
+    if (t === "(") { const n = orE(); if (toks[i++] !== ")") throw new Error("Missing closing parenthesis"); return n; }
+    if (typeof t === "object") return t;
+    throw new Error(`Unexpected operator '${t}'`);
+  }
+  const ast = orE();
+  if (i < toks.length) throw new Error(toks[i] === ")" ? "Unmatched closing parenthesis" : "Unexpected token");
+  return ast;
+}
+const evalAst = (n, env) =>
+  "k" in n ? n.k : "v" in n ? env[n.v] :
+  n.op === "!" ? !evalAst(n.a, env) :
+  n.op === "&" ? evalAst(n.a, env) && evalAst(n.b, env) :
+  n.op === "|" ? evalAst(n.a, env) || evalAst(n.b, env) :
+  evalAst(n.a, env) !== evalAst(n.b, env);
+function varsOf(n, set = new Set()) {
+  if ("v" in n) set.add(n.v); else if (n.op) { varsOf(n.a, set); if (n.b) varsOf(n.b, set); }
+  return [...set].sort();
+}
+
+/* ---------- Quine–McCluskey ---------- */
+function primeImplicants(minterms, n) {
+  let cur = new Set(minterms.map(m => m.toString(2).padStart(n, "0")));
+  const primes = new Set();
+  while (cur.size) {
+    const arr = [...cur], used = new Set(), nxt = new Set();
+    for (let a = 0; a < arr.length; a++) for (let b = a + 1; b < arr.length; b++) {
+      let diff = -1, ok = true;
+      for (let k = 0; k < n; k++) if (arr[a][k] !== arr[b][k]) { if (diff >= 0) { ok = false; break; } diff = k; }
+      if (ok && diff >= 0) {
+        nxt.add(arr[a].slice(0, diff) + "-" + arr[a].slice(diff + 1));
+        used.add(arr[a]); used.add(arr[b]);
+      }
+    }
+    arr.forEach(x => { if (!used.has(x)) primes.add(x); });
+    cur = nxt;
+  }
+  return [...primes];
+}
+const covers = (p, m, n) => { const s = m.toString(2).padStart(n, "0"); return [...p].every((c, k) => c === "-" || c === s[k]); };
+function minimalCover(minterms, primes, n) {
+  let best = null;
+  (function rec(unc, chosen) {
+    if (!unc.length) { if (!best || chosen.length < best.length) best = chosen; return; }
+    if (best && chosen.length >= best.length) return;
+    for (const p of primes.filter(p => covers(p, unc[0], n)))
+      rec(unc.filter(m => !covers(p, m, n)), [...chosen, p]);
+  })(minterms, []);
+  return best;
+}
+const termStr = (p, vars) => {
+  const s = [...p].map((c, k) => c === "-" ? "" : vars[k] + (c === "0" ? "'" : "")).join("");
+  return s || "1";
+};
+
+/* ---------- Boolean UI ---------- */
+function analyzeBoolean() {
+  const raw = $("bool-expr").value.trim(), out = $("bool-simplified");
+  ["bool-steps"].forEach(id => $(id).innerHTML = "");
+  ["bool-table-wrap", "bool-kmap-wrap"].forEach(id => $(id).hidden = true);
+  try {
+    const ast = parseBool(raw), vars = varsOf(ast), n = vars.length;
+    if (n === 0) {                                  // constant expression such as 1+0
+      const v = evalAst(ast, {});
+      out.innerHTML = `<span class="label">Constant expression</span><span class="value">${v ? 1 : 0}</span>`;
+      return;
+    }
+    if (n > 6) throw new Error("Up to 6 variables are supported");
+    const rows = [], minterms = [];
+    for (let m = 0; m < (1 << n); m++) {
+      const env = {}; vars.forEach((v, k) => env[v] = !!((m >> (n - 1 - k)) & 1));
+      const o = evalAst(ast, env); rows.push([m, o]); if (o) minterms.push(m);
+    }
+    let simplified, primes = [], chosen = [];
+    if (!minterms.length) simplified = "0";
+    else if (minterms.length === 1 << n) simplified = "1";
+    else {
+      primes = primeImplicants(minterms, n);
+      chosen = minimalCover(minterms, primes, n);
+      simplified = chosen.map(p => termStr(p, vars)).join(" + ");
+    }
+    const canon = minterms.length && minterms.length < (1 << n)
+      ? minterms.map(m => termStr(m.toString(2).padStart(n, "0"), vars)).join(" + ") : simplified;
+
+    out.innerHTML = `<span class="label">Minimal sum of products</span><span class="value">${esc(simplified)}</span>`;
+    $("bool-steps").innerHTML = `<div class="steps">
+      <div class="step"><div class="step-title">Original expression</div>${esc(raw)}</div>
+      <div class="step"><div class="step-title">Minterms where output is 1</div>${minterms.length ? "Σm(" + minterms.join(", ") + ")" : "none"}</div>
+      <div class="step"><div class="step-title">Canonical sum of products</div>${esc(canon)}</div>
+      <div class="step"><div class="step-title">Prime implicants (Quine–McCluskey)</div>${primes.length ? primes.map(p => esc(termStr(p, vars))).join(", ") : "n/a"}</div>
+      <div class="step"><div class="step-title">Selected minimal cover</div><strong style="color:var(--ok)">${esc(simplified)}</strong></div></div>`;
+
+    let t = `<table><thead><tr>${vars.map(v => `<th>${v}</th>`).join("")}<th>Output</th></tr></thead><tbody>`;
+    for (const [m, o] of rows)
+      t += `<tr>${m.toString(2).padStart(n, "0").split("").map(b => `<td>${b}</td>`).join("")}<td class="${o ? "t" : "f"}">${o ? 1 : 0}</td></tr>`;
+    $("bool-table").innerHTML = t + "</tbody></table>";
+    $("bool-table-wrap").hidden = false;
+
+    if (n >= 2 && n <= 4) { $("bool-kmap").innerHTML = kmap(vars, minterms); $("bool-kmap-wrap").hidden = false; }
+  } catch (e) { showError(out, e.message); }
+}
+function kmap(vars, minterms) {
+  const n = vars.length, rb = n >> 1, cb = n - rb;
+  const gray = k => k === 1 ? [0, 1] : [0, 1, 3, 2];
+  const lab = (x, bits) => x.toString(2).padStart(bits, "0");
+  const R = gray(rb), C = gray(cb);
+  let h = `<table class="kmap"><tr><th>${vars.slice(0, rb).join("")} \\ ${vars.slice(rb).join("")}</th>${C.map(c => `<th>${lab(c, cb)}</th>`).join("")}</tr>`;
+  for (const r of R) {
+    h += `<tr><th>${lab(r, rb)}</th>`;
+    for (const c of C) { const one = minterms.includes((r << cb) | c); h += `<td class="${one ? "one" : ""}">${one ? 1 : 0}</td>`; }
+    h += "</tr>";
+  }
+  return h + "</table>";
+}
+$("bool-go").onclick = analyzeBoolean;
+$("bool-examples").addEventListener("click", e => {
+  if (e.target.tagName === "BUTTON") { $("bool-expr").value = e.target.textContent; analyzeBoolean(); }
+});
+</script>
+</body>
+</html>
